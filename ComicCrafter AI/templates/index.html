@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Comic Crafter AI</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        #userPrompt {
+            width: 100%;
+            height: 100px;
+            padding: 12px;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: block;
+            margin: 0 auto 20px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        #loading {
+            text-align: center;
+            color: #7f8c8d;
+            display: none;
+            margin: 20px 0;
+        }
+        #comicOutput {
+            display: none;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        #comicStrip {
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .panel {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #3498db;
+        }
+        .panel h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .panel p {
+            margin-bottom: 0;
+        }
+        .error {
+            color: #e74c3c;
+            text-align: center;
+        }
+        #downloadBtn {
+            background-color: #27ae60;
+            margin: 20px auto 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Comic Crafter AI</h1>
+    <textarea id="userPrompt" placeholder="Example: 'A robot chef cooking pizza on Mars for alien customers'"></textarea>
+    <button onclick="generateComic()">Generate Comic</button>
+    <p id="loading">Generating your comic... Please wait...</p>
+
+    <div id="comicOutput">
+        <h2>Your Generated Comic</h2>
+        <div id="panelsContainer"></div>
+        <img id="comicStrip" alt="Your generated comic strip"/>
+        <a id="downloadBtn" href="#" download="comic.png">
+            <button id="downloadButton">Download Comic</button>
+        </a>
+    </div>
+
+    <script>
+        async function generateComic() {
+            const prompt = document.getElementById("userPrompt").value.trim();
+            if (!prompt) {
+                alert("Please enter a comic idea!");
+                return;
+            }
+
+            
+            document.getElementById("loading").style.display = "block";
+            document.getElementById("comicOutput").style.display = "none";
+            document.getElementById("panelsContainer").innerHTML = "";
+            document.getElementById("comicStrip").src = "";
+
+            try {
+                const response = await fetch("/generate_comic", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ prompt })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                
+                const panelsContainer = document.getElementById("panelsContainer");
+                data.script.split('---').forEach((panelText, index) => {
+                    const panelDiv = document.createElement("div");
+                    panelDiv.className = "panel";
+                    panelDiv.innerHTML = `<h3>Panel ${index + 1}</h3><p>${panelText.replace(/\n/g, "<br>")}</p>`;
+                    panelsContainer.appendChild(panelDiv);
+                });
+
+                
+                document.getElementById("comicStrip").src = `data:image/png;base64,${data.comic_strip}`;
+
+                
+                document.getElementById("downloadBtn").href = `data:image/png;base64,${data.comic_strip}`;
+
+                
+                document.getElementById("comicOutput").style.display = "block";
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+                console.error(error);
+            } finally {
+                document.getElementById("loading").style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>
